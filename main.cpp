@@ -1,120 +1,101 @@
 #include <iostream>
-#include <math.h>
+#include "gtest/gtest.h"
+#include "distance_two_line_segments.h"
+#include <ctime>
 
-struct point
-{
-    double x,y,z;
-};
+#define EPS 1e-5
 
-struct line
-{
-    double x1,y1,z1,x2,y2,z2;
-};
-double dot(point c1, point c2)
-{
-    return (c1.x * c2.x + c1.y * c2.y + c1.z * c2.z);
+double get_random_coordinate() {
+    return (rand() % 19927) / 100.;
+
 }
 
-double norm(point c1)
-{
-    return sqrt(dot(c1, c1));
-}
-double getShortestDistance(line line1, line line2)
-{
-    double EPS = 0.00000001;
-
-    point delta21 = point();
-    delta21.x = line1.x2 - line1.x1;
-    delta21.y = line1.y2 - line1.y1;
-    delta21.x = line1.z2 - line1.z1;
-
-    point delta41 =  point();
-    delta41.x = line2.x2 - line2.x1;
-    delta41.y = line2.y2 - line2.y1;
-    delta41.z = line2.z2 - line2.z1;
-
-    point delta13 =  point();
-    delta13.x = line1.x1 - line2.x1;
-    delta13.y = line1.y1 - line2.y1;
-    delta13.z = line1.z1 - line2.z1;
-
-    double a = dot(delta21, delta21);
-    double b = dot(delta21, delta41);
-    double c = dot(delta41, delta41);
-    double d = dot(delta21, delta13);
-    double e = dot(delta41, delta13);
-    double D = a * c - b * b;
-
-    double sc, sN, sD = D;
-    double tc, tN, tD = D;
-
-    if (D < EPS)
-    {
-        sN = 0.0;
-        sD = 1.0;
-        tN = e;
-        tD = c;
-    }
-    else
-    {
-        sN = (b * e - c * d);
-        tN = (a * e - b * d);
-        if (sN < 0.0)
-        {
-            sN = 0.0;
-            tN = e;
-            tD = c;
-        }
-        else if (sN > sD)
-        {
-            sN = sD;
-            tN = e + b;
-            tD = c;
-        }
-    }
-
-    if (tN < 0.0)
-    {
-        tN = 0.0;
-
-        if (-d < 0.0)
-            sN = 0.0;
-        else if (-d > a)
-            sN = sD;
-        else
-        {
-            sN = -d;
-            sD = a;
-        }
-    }
-    else if (tN > tD)
-    {
-        tN = tD;
-        if ((-d + b) < 0.0)
-            sN = 0;
-        else if ((-d + b) > a)
-            sN = sD;
-        else
-        {
-            sN = (-d + b);
-            sD = a;
-        }
-    }
-
-    if (abs(sN) < EPS) sc = 0.0;
-    else sc = sN / sD;
-    if (abs(tN) < EPS) tc = 0.0;
-    else tc = tN / tD;
-
-    point dP{};
-    dP.x = delta13.x + (sc * delta21.x) - (tc * delta41.x);
-    dP.y = delta13.y + (sc * delta21.y) - (tc * delta41.y);
-    dP.z = delta13.z + (sc * delta21.z) - (tc * delta41.z);
-
-    return sqrt(dot(dP, dP));
+TEST(Basic_test, line_segemnts_intersects) {
+    line line1{1, 0, 0, 2, 0, 0};
+    line line2{1.5, 0, 0, 1, 0, 0};
+    ASSERT_NEAR(get_shortest_distance(line1, line2), 0, EPS);
 }
 
+TEST(Basic_test, line_segemnts_intersects2) {
+    line line1{1, 1, 0, 0, 0, 0};
+    line line2{0, 1, 0, 1, 0, 0};
+    ASSERT_NEAR(get_shortest_distance(line1, line2), 0, EPS);
+}
+
+TEST(Basic_test, line_segments_parallel) {
+    line line1{1.5, 2.5, 3.5, 3, 5, 7};
+    line line2{1.5, 2.5, 4.5, 3, 5, 8};
+    ASSERT_NEAR(get_shortest_distance(line1, line2), 0.64003, EPS);
+}
+
+TEST(Basic_test, line_segments_parallel2) {
+    line line1{-8.17, 7, 0, -6.72, 9.52, 0};
+    line line2{-5.69, 2.97, 0, -7.04, 0.63, 0};
+    ASSERT_NEAR(get_shortest_distance(line1, line2), 4.73194, EPS);
+}
+
+TEST(Basic_test, line_segments_crossing) {
+    line line1{1.64, -3, -1.53, 0.85, -3, 1.27};
+    line line2{2, 0, 0, 0, 0, -2};
+    ASSERT_NEAR(get_shortest_distance(line1, line2), 3., EPS);
+
+}
+
+TEST(Basic_test, line_segments_crossing2) {
+    line line1{-4.65, 3.11, -1.5, -6.29, 5.79, 0};
+    line line2{-6.29, 0.92, 0, -6.29, 3.11, 2.25};
+    ASSERT_NEAR(get_shortest_distance(line1, line2), 3.07958, EPS);
+}
+
+TEST(Benchmark, segment_crossing) {
+    line line1{-4.65, 3.11, -1.5, -6.29, 5.79, 0};
+    line line2{-6.29, 0.92, 0, -6.29, 3.11, 2.25};
+    for (size_t i = 0; i != 1000000; ++i) {
+        ASSERT_NEAR(get_shortest_distance(line1, line2), 3.07958, EPS);
+    }
+
+}
+
+TEST(Benchmark, segment_intersects) {
+    line line1{1, 0, 0, 2, 0, 0};
+    line line2{1.5, 0, 0, 1, 0, 0};
+    for (size_t i = 0; i != 1000000; ++i) {
+        ASSERT_NEAR(get_shortest_distance(line1, line2), 0, EPS);
+    }
+
+}
+
+TEST(Benchmark, segments_parallel) {
+    line line1{-8.17, 7, 0, -6.72, 9.52, 0};
+    line line2{-5.69, 2.97, 0, -7.04, 0.63, 0};
+    for (size_t i = 0; i != 1000000; ++i) {
+        ASSERT_NEAR(get_shortest_distance(line1, line2), 4.73194, EPS);
+    }
+
+}
+
+TEST(Benchmark, random_points) {
+    line line1;
+    line line2;
+    srand(42);
+    for (size_t i = 0; i != 1000000; ++i) {
+        line1.x1 = get_random_coordinate();
+        line1.x2 = get_random_coordinate();
+        line1.y1 = get_random_coordinate();
+        line1.y2 = get_random_coordinate();
+        line1.z1 = get_random_coordinate();
+        line1.z2 = get_random_coordinate();
+        line2.x1 = get_random_coordinate();
+        line2.x2 = get_random_coordinate();
+        line2.y1 = get_random_coordinate();
+        line2.y2 = get_random_coordinate();
+        line2.z1 = get_random_coordinate();
+        line2.z2 = get_random_coordinate();
+        get_shortest_distance(line1,line2);
+    }
+}
 
 int main() {
-    return 0;
+    testing::InitGoogleTest();
+    return RUN_ALL_TESTS();
 }
